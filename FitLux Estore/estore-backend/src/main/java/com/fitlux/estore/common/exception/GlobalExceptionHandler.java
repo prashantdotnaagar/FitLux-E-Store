@@ -23,7 +23,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse>handleBusinessException(BusinessException ex, HttpServletRequest request){
         return buildResponse(
                 ex.getServiceCode(),
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.OK,
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, HttpServletRequest request){
+        return buildResponse(
+                ex.getServiceCode(),
+                HttpStatus.OK,
                 request.getRequestURI()
         );
     }
@@ -37,7 +46,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 serviceCodeImpl.INVALID_REQUEST,
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.OK,
                 request.getRequestURI()
         );
     }
@@ -49,7 +58,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 serviceCodeImpl.INVALID_REQUEST,
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.OK,
                 request.getRequestURI()
         );
     }
@@ -63,7 +72,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 serviceCodeImpl.INVALID_REQUEST,
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.OK,
                 request.getRequestURI()
         );
     }
@@ -77,7 +86,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 ex.getServiceCode(),
-                HttpStatus.UNAUTHORIZED,
+                HttpStatus.OK,
                 request.getRequestURI()
         );
     }
@@ -91,7 +100,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 serviceCodeImpl.INTERNAL_SERVER_ERROR,
-                HttpStatus.INTERNAL_SERVER_ERROR,
+                HttpStatus.OK,
                 request.getRequestURI()
         );
     }
