@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ErrorResponse {
     private String code;
+    private String requestId;
     private String message;
     private String path;
     private LocalDateTime timestamp;

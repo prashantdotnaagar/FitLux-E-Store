@@ -44,6 +44,12 @@ public enum serviceCodeImpl implements ServiceCode {
     LOGIN_FAILED("FSA002", "Invalid credentials"),
     TOKEN_EXPIRED("FSA003", "Authentication token expired"),
     ACCESS_DENIED("FSA004", "Access denied"),
+    REFRESH_TOKEN_EXPIRED("FSA005", "Refresh token expired"),
+    INVALID_REFRESH_TOKEN("FSA006", "Invalid refresh token"),
+    TOKEN_REFRESH_SUCCESS("FSA007", "Token refreshed successfully"),
+    ALREADY_LOGGED_IN("FSA008", "User already logged in"),
+    LOGOUT_SUCCESS("FSA009", "Logout successful"),
+    USER_NOT_LOGGED_IN("FSA010", "Please login first"),
 
     /* ===================== USER (FSU) ===================== */
     USER_CREATED("FSU001", "User registered successfully"),

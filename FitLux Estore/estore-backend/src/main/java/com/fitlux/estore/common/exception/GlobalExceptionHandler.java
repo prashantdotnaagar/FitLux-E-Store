@@ -111,6 +111,7 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse>buildResponse(ServiceCode serviceCode, HttpStatus status, String path){
     ErrorResponse response = new ErrorResponse(
                 serviceCode.getCode(),
+                org.slf4j.MDC.get("requestId"),
                 serviceCode.getMessage(),
                 path,
                 LocalDateTime.now()
