@@ -14,9 +14,7 @@ public enum PermissionCode {
     //    For products specific
 
     PRODUCT_VIEW,
-    PRODUCT_CREATE,
-    PRODUCT_UPDATE,
-    PRODUCT_DELETE,
+    PRODUCT_MANAGE,
 
 
     //    For Categories specific

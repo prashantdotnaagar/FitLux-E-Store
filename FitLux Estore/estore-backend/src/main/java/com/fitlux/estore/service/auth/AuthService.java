@@ -65,92 +65,111 @@ public class AuthService {
         this.encryptionUtil = encryptionUtil;
     }
 
-    @Transactional()
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         logger.info("Attempting login for email: {}", request.email());
+
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> {
-                    logger.warn("Login failed: User not found for email: {}", request.email());
-                    return new UnauthorizedException(serviceCodeImpl.LOGIN_FAILED);
-                });
+                .orElseThrow(() -> new UnauthorizedException(serviceCodeImpl.LOGIN_FAILED));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            logger.warn("Login failed: Invalid password for email: {}", request.email());
             throw new UnauthorizedException(serviceCodeImpl.LOGIN_FAILED);
         }
 
         if (refreshTokenRepository.existsByUserAndRevokedFalseAndExpiresAtAfter(user, LocalDateTime.now())) {
-            logger.warn("Login prevented: User already logged in: {}", request.email());
             throw new BusinessException(serviceCodeImpl.ALREADY_LOGGED_IN);
         }
 
-        Map<String, Object> claims = new HashMap<>();
-        // Prevent ConcurrentModificationException by using detached copies of collections
-        Set<UserRole> userRoles = user.getUserRoles() != null 
-                ? new HashSet<>(user.getUserRoles()) 
+        // Detached roles
+        Set<UserRole> userRoles = user.getUserRoles() != null
+                ? new HashSet<>(user.getUserRoles())
                 : new HashSet<>();
 
+        // ✅ ROLE FIX (ROLE_ prefix)
+        String role = userRoles.stream()
+                .filter(ur -> ur.isActive() && ur.getRole() != null)
+                .map(ur -> "ROLE_" + ur.getRole().getRoleCode().name())
+                .findFirst()
+                .orElse(null);
+
+        // Permissions
         Set<String> permissions = userRoles.stream()
                 .filter(ur -> ur.isActive() && ur.getRole() != null)
                 .flatMap(ur -> {
-                    Role role = ur.getRole();
-                    claims.put("role",role.getName());
-                    Set<RolePermission> rolePermissions = role.getRolePermissions() != null 
-                            ? new HashSet<>(role.getRolePermissions()) 
-                            : new HashSet<>();
+                    Set<RolePermission> rolePermissions =
+                            ur.getRole().getRolePermissions() != null
+                                    ? new HashSet<>(ur.getRole().getRolePermissions())
+                                    : new HashSet<>();
                     return rolePermissions.stream();
                 })
                 .filter(rp -> rp.getPermission() != null)
                 .map(rp -> rp.getPermission().getPermissionCode().name())
                 .collect(Collectors.toSet());
 
-
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
         claims.put("permissions", permissions);
 
         String accessToken = jwtutil.generateToken(claims, user.getId().toString());
         RefreshToken refreshToken = createRefreshToken(user);
 
-        String encryptedExpiration = encryptionUtil.encrypt(String.valueOf(accessTokenExpirationSeconds));
-        logger.info("Login successful for user: {}", user.getEmail());
+        String encryptedExpiration =
+                encryptionUtil.encrypt(String.valueOf(accessTokenExpirationSeconds));
 
         return new AuthResponse(accessToken, refreshToken.getToken(), encryptedExpiration);
     }
 
+
     @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        logger.info("Attempting refresh token");
+
         return refreshTokenRepository.findByTokenAndRevokedFalse(request.refreshToken())
                 .map(refreshToken -> {
+
                     if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-                        logger.warn("Refresh token expired");
                         throw new UnauthorizedException(serviceCodeImpl.REFRESH_TOKEN_EXPIRED);
                     }
-                    
-                    // Rotate refresh token: revoke old one, create new one
+
+                    // Rotate refresh token
                     refreshToken.setRevoked(true);
                     refreshTokenRepository.save(refreshToken);
-                    
+
                     User user = refreshToken.getUser();
                     RefreshToken newRefreshToken = createRefreshToken(user);
-                    
-                    // Generate new access token
-                    // Re-fetch permissions to ensure they are up-to-date
-                    Set<String> permissions = getPermissionsForUser(user);
-                    Map<String, Object> claims = new HashMap<>();
-                    claims.put("permissions", permissions);
-                    
-                    String newAccessToken = jwtutil.generateToken(claims, user.getId().toString());
-                    String encryptedExpiration = encryptionUtil.encrypt(String.valueOf(accessTokenExpirationSeconds));
 
-                    logger.info("Refresh token successful for user: {}", user.getEmail());
-                    
-                    return new AuthResponse(newAccessToken, newRefreshToken.getToken(), encryptedExpiration);
+                    Set<UserRole> userRoles = user.getUserRoles() != null
+                            ? new HashSet<>(user.getUserRoles())
+                            : new HashSet<>();
+
+                    // ✅ SAME ROLE LOGIC AS LOGIN
+                    String role = userRoles.stream()
+                            .filter(UserRole::isActive)
+                            .map(ur -> "ROLE_" + ur.getRole().getRoleCode().name())
+                            .findFirst()
+                            .orElse(null);
+
+                    Set<String> permissions = getPermissionsForUser(user);
+
+                    Map<String, Object> claims = new HashMap<>();
+                    claims.put("role", role);
+                    claims.put("permissions", permissions);
+
+                    String newAccessToken =
+                            jwtutil.generateToken(claims, user.getId().toString());
+
+                    String encryptedExpiration =
+                            encryptionUtil.encrypt(String.valueOf(accessTokenExpirationSeconds));
+
+                    return new AuthResponse(
+                            newAccessToken,
+                            newRefreshToken.getToken(),
+                            encryptedExpiration
+                    );
                 })
-                .orElseThrow(() -> {
-                    logger.warn("Invalid refresh token provided");
-                    return new UnauthorizedException(serviceCodeImpl.INVALID_REFRESH_TOKEN);
-                });
+                .orElseThrow(() ->
+                        new UnauthorizedException(serviceCodeImpl.INVALID_REFRESH_TOKEN));
     }
+
 
     @Transactional
     public void logoutByUserId(Long userId) {

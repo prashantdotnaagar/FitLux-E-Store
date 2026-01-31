@@ -36,11 +36,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Claims claims = jwtUtil.extractClaims(token);
 
-            List<SimpleGrantedAuthority> authorities =new ArrayList<>();
-                    String role=claims.get("role",String.class);
-                    if (role != null) {
-                             authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-                                    }
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            String role = claims.get("role", String.class);
+            if (role != null) {
+                authorities.add(new SimpleGrantedAuthority(role)); 
+            }
 
             List<String> permissions = claims.get("permissions", List.class);
             if (permissions != null) {

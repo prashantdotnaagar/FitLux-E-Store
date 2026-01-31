@@ -21,6 +21,14 @@ public enum serviceCodeImpl implements ServiceCode {
     REFUND_INITIATED("FST005", "Refund initiated successfully"),
     REFUND_COMPLETED("FST006", "Refund completed successfully"),
 
+    /* ===================== BRAND (FSB) ===================== */
+    BRAND_CREATED("FSB001", "Brand created successfully"),
+    BRAND_ALREADY_EXISTS("FSB002", "Brand already exists"),
+    BRAND_NOT_FOUND("FSB003", "Brand not found"),
+    BRAND_UPDATED_SUCCESS("FSB004", "Brand Created Successfully"),
+    BRAND_DELETED_SUCCESS("FSB005", "Brand Deleted Successfully"),
+    BRAND_STATUS_UPDATED_SUCCESS("FSB005", "Brand Deleted Successfully"),
+
     /* ===================== PRODUCT (FSP) ===================== */
     PRODUCT_CREATED("FSP001", "Product created successfully"),
     PRODUCT_UPDATED("FSP002", "Product updated successfully"),
